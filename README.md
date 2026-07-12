@@ -4,27 +4,24 @@ A custom skill for AI coding agents (such as Google Antigravity, Claude Code, an
 
 ## Enforced Standards
 
-This skill configures AI agents to adhere to the latest WordPress standards and review guidelines.
+This skill configures AI agents to adhere to current WordPress coding standards and WordPress.org plugin review guidelines. The full rules are in [SKILL.md](./SKILL.md), covering:
 
-### 1. Compatibility and Modern PHP
-* **Minimum PHP 7.4**: Ensures all written or modified code runs seamlessly on PHP 7.4 or newer.
-* **Safer Alternatives**: Prefers robust WordPress equivalents over native PHP functions, such as `wp_strip_all_tags()` instead of `strip_tags()`, and `gmdate()` instead of timezone-dependent `date()`.
-
-### 2. Namespace and Naming Collision Prevention
-* **Unique Prefixing**: All classes, functions, options, constants, and namespaces must be prefixed with a unique identifier at least 4 characters long (e.g., `prefix_` or `slug_`).
-
-### 3. Security and API Integrity
-* **No Inline Scripts or Styles**: Enforces enqueuing static JS/CSS via `wp_enqueue_script()` and `wp_enqueue_style()`.
-* **Sanitization of Settings**: All options registered via `register_setting()` must specify a proper `sanitize_callback` using `wp_kses_post()` or similar context-safe sanitizers.
-* **REST API Authorization**: Requires strict `permission_callback` checks for custom REST API routes, protecting modifications with appropriate admin capabilities (e.g., `manage_options`).
-
-### 4. Database Optimization
-* **Direct Database Query Caching**: Discourages uncached database calls. Requires utilizing `wp_cache_get()` and `wp_cache_set()` where direct queries are necessary.
-
-### 5. Translation Standards
-* **Text Domain Alignment**: Automatically matches the text domain to the plugin or theme slug.
-* **No Manual Text Domain Loading**: Discourages manual calls to `load_plugin_textdomain()` when hosted on WordPress.org.
-* **Translator Comments**: Requires inline translator comments immediately preceding translation functions containing placeholders (e.g., `// translators: ...`).
+1. WordPress Coding Standards
+2. PHP Compatibility (7.4+)
+3. Unique Prefixing
+4. Plugin Quality (Plugin Check)
+5. Translation Text Domain
+6. Avoid `strip_tags()`
+7. Do Not Load Plugin Textdomain Manually
+8. Date and Time Handling
+9. Database Caching
+10. Translation Placeholders
+11. Version Updates and Changelog
+12. Avoid Global PHP Limit Modifications
+13. Declare Plugin Dependencies (`Requires Plugins`)
+14. WordPress.org Reviewer Standards
+15. PHPCS Ignore Annotations & WordPress VIP Rules
+16. Readme Tag Limits
 
 ## Installation
 
@@ -32,31 +29,56 @@ You can install this skill either globally for all projects or locally within a 
 
 ### Global Installation
 
-Clone this repository directly into your agent's global skills configuration directory. For example:
+Clone this repository directly into your agent's global skills configuration directory.
 
-* **Google Antigravity**:
-  ```bash
-  git clone https://github.com/majiix/wp-best-practices.git "%USERPROFILE%\.gemini\config\skills\wp-best-practices"
-  ```
-* **Claude Code**:
-  ```bash
-  git clone https://github.com/majiix/wp-best-practices.git "%USERPROFILE%\.claude\config\skills\wp-best-practices"
-  ```
+**Google Antigravity**
+
+macOS/Linux:
+```bash
+git clone https://github.com/majiix/wp-best-practices.git ~/.gemini/config/skills/wp-best-practices
+```
+Windows (cmd/PowerShell):
+```
+git clone https://github.com/majiix/wp-best-practices.git "%USERPROFILE%\.gemini\config\skills\wp-best-practices"
+```
+
+**Claude Code**
+
+macOS/Linux:
+```bash
+git clone https://github.com/majiix/wp-best-practices.git ~/.claude/skills/wp-best-practices
+```
+Windows (cmd/PowerShell):
+```
+git clone https://github.com/majiix/wp-best-practices.git "%USERPROFILE%\.claude\skills\wp-best-practices"
+```
 
 ### Workspace-Specific Installation
 
-To activate the skill for a single project:
+To activate the skill for a single project, the directory depends on which agent you're using:
+
+**Google Antigravity** (and other agents following the `.agents/skills` convention):
+
 1. Create an `.agents/skills` directory at the root of your WordPress project repository if it does not exist.
 2. Clone this repository into that directory:
-   ```bash
-   git clone https://github.com/majiix/wp-best-practices.git .agents/skills/wp-best-practices
-   ```
+```bash
+git clone https://github.com/majiix/wp-best-practices.git .agents/skills/wp-best-practices
+```
+
+**Claude Code**:
+
+Claude Code discovers project-level skills from `.claude/skills/` in the repository root instead:
+```bash
+git clone https://github.com/majiix/wp-best-practices.git .claude/skills/wp-best-practices
+```
+
+If you use multiple agents on the same project, you can clone into both directories, or clone once and symlink the second path to avoid duplication.
 
 ## Configuration
 
-The core instructions are located in the [SKILL.md](SKILL.md) file. The frontmatter defines the trigger and activation rules:
+The core instructions are located in the [SKILL.md](https://github.com/majiix/wp-best-practices/blob/main/SKILL.md) file. The frontmatter defines the trigger and activation rules:
 
-```yaml
+```
 ---
 name: wp-best-practices
 description: "Use when coding, refactoring, or auditing WordPress projects (plugins, themes, or apps). Enforces PHP 7.4+ compatibility, unique prefixing (4+ chars), translation rules, database caching, and specific date/time handling."

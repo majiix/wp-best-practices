@@ -9,8 +9,8 @@ Follow these guidelines for all WordPress-related development tasks.
 
 ## Guidelines
 
-### 1. WordPress Standards and Codex
-- Adhere to the best practices in the most recent WordPress Codex.
+### 1. WordPress Coding Standards
+- Adhere to the WordPress Coding Standards (WPCS) and the Plugin/Theme Handbooks on developer.wordpress.org.
 - Always use standard WordPress coding standards when writing PHP, JavaScript, and TypeScript.
 
 ### 2. PHP Compatibility
@@ -64,7 +64,7 @@ Follow these guidelines for all WordPress-related development tasks.
 - **No Inline JS/CSS**: Do not output raw `<script>` or `<style>` HTML tags. Enqueue static JS/CSS via `wp_enqueue_script()` / `wp_enqueue_style()`. For dynamic or localized values, pass them using `wp_localize_script()`.
 - **Sanitize Settings Options**: Ensure all options registered through `register_setting()` specify a proper `sanitize_callback`. If the option can contain HTML elements, sanitize it using `wp_kses_post()` or a custom `wp_kses` allowlist instead of returning the input raw or unchanged.
 - **REST API Endpoint Authorization**: Always implement strict `permission_callback` arguments for custom REST API routes. Endpoints that write to or modify site-wide settings/options or perform administrative actions must be protected by appropriate admin capabilities (e.g., `current_user_can( 'manage_options' )`) rather than standard post-editing capabilities (like `edit_posts`).
-- **No Arbitrary Code/CSS Insertion**: Do not allow users to save or inject custom CSS, JavaScript, or PHP code (e.g., custom CSS textareas). Replicate existing WordPress Customizer/Editor features or allow arbitrary code fields is prohibited. Use structured setting forms/toggles instead.
+- **No Arbitrary Code/CSS Insertion**: Do not allow users to save or inject custom CSS, JavaScript, or PHP code (e.g., custom CSS textareas). Replicating existing WordPress Customizer/Editor features or allowing arbitrary code fields is prohibited. Use structured setting forms/toggles instead.
 - **Disclose External / 3rd Party Services**: If a plugin connects to external APIs/services (e.g., OpenRouter, Stripe, CDN), disclose it clearly in `readme.txt` under a `== External Services ==` section. For each service, document: what the service is, what data is sent and when, and provide direct links to their Terms of Service and Privacy Policy.
 - **Strict Unique Prefixing**: All declarations, global variables, stored options, database tables, and public-facing hooks/shortcodes must be prefixed with a unique identifier at least 4 characters long. Avoid using common generic words (such as `ai`, `custom`, `plugin`) as prefixes.
 
@@ -75,4 +75,5 @@ Follow these guidelines for all WordPress-related development tasks.
 - **Table Interpolation**: Database table names cannot be prepared using `%s`. When interpolating table variables (e.g. `FROM $table`), use combined comments to bypass prepared checks.
 
 ### 16. Readme Tag Limits
-- **Strict Tag Limits**: Limit tags list in `readme.txt` to a maximum of 5 tags to prevent WordPress.org repository rejection.
+- WordPress.org allows up to 12 tags in `readme.txt`, but only the first 5 are used for search, indexing, and display — anything beyond that is effectively wasted, and anything past 12 is dropped entirely.
+- Keep the `Tags` field to 5 well-chosen, relevant terms so nothing meaningful gets ignored.
