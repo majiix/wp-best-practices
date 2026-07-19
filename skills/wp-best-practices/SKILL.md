@@ -1,6 +1,6 @@
 ---
 name: wp-best-practices
-description: "Use when coding, refactoring, or auditing WordPress projects (plugins, themes, or apps). Enforces PHP 7.4+ compatibility, unique prefixing (4+ chars), translation rules, database caching, and specific date/time handling."
+description: "Use when coding, refactoring, or auditing WordPress projects (plugins, themes, or apps). Enforces PHP 7.4+ compatibility, unique prefixing (4+ chars), translation rules, database caching, specific date/time handling, and high-traffic/concurrency performance rules (REST endpoints, session handling, request batching)."
 ---
 
 # WordPress Best Practices and Code Standards
@@ -103,3 +103,52 @@ Follow these guidelines for all WordPress-related development tasks.
 
 ### 25. Respect Trademarks in Naming
 - **Trademark Rules**: Do not start a plugin name or slug with trademarked terms (e.g., use "for WooCommerce" instead of starting the name/slug with "WooCommerce").
+
+
+## Performance Rules for High-Traffic WordPress/WooCommerce Plugins
+
+Apply these rules to every plugin you write, regardless of its purpose or feature set:
+
+### 26. Endpoints
+- Use a dedicated REST API endpoint (`register_rest_route`) instead of `admin-ajax.php`.
+- Each endpoint should execute only the logic it strictly needs — don't route through unnecessary WordPress hooks or lifecycle layers.
+
+### 27. Session & State
+- Implement session/cache handling to support both backends: detect whether Redis/Object Cache is active, and use it when available; fall back to MySQL when it isn't.
+- Avoid unnecessary reads/writes to session or the database on every request — don't rewrite data that hasn't changed, regardless of backend.
+- Avoid any fragment-refresh or full state-rebuild pattern after small operations; return only the piece of state that actually changed in the response.
+
+### 28. Network Requests
+- Each user action (add/remove/update) should trigger exactly one network request, not a chain of several.
+- Disable buttons client-side during an in-flight request (debounce) to prevent duplicate submissions.
+- Implement error/timeout states and retry in the UI — the user should never think the site has frozen.
+
+### 29. Caching
+- Never cache output from endpoints that is personalized (nonce-bound, user-specific).
+- Keep public-facing pages (product, listing) full-page-cache friendly; keep all dynamic logic inside the dedicated endpoint, not in page rendering.
+
+### 30. Security Without Overhead
+- Don't strip out nonce/validation, but avoid triggering unnecessary WordPress hooks along the request path.
+
+### 31. Code Architecture
+- Each plugin: a separate REST controller + a separate helper/service layer.
+- Keep database/state logic fully decoupled from UI rendering logic (JS/modal/forms).
+
+### 32. Conditional Asset Loading
+- Never enqueue JS/CSS site-wide via `wp_enqueue_scripts` without a condition. Check `is_product()`, `is_cart()`, a shortcode presence, etc., and load assets only on the pages that actually need them.
+
+### 33. Autoloaded Options
+- When storing options via `add_option()`/`update_option()`, set `autoload => false` for large or infrequently-read values. Large autoloaded options get pulled into memory on every single page load, even when unused.
+
+### 34. Avoid Blocking External Requests on the Frontend
+- Never call `wp_remote_get()`/`wp_remote_post()` synchronously during frontend page render. If an external API call is required, either cache the result with a transient/object cache, or move it to an async/background job (e.g. Action Scheduler, WP-Cron with a reasonable interval).
+- Always set an explicit `timeout` on any remote request.
+
+### 35. WP-Cron on High-Traffic Sites
+- Do not rely on WordPress's default pseudo-cron (triggered by page visits) for scheduled tasks on high-traffic sites — it adds overhead to random requests and is unreliable under load.
+- Suggest adding `DISABLE_WP_CRON` in wp-config and recommend a real system cron job instead.
+
+### 36. Query Efficiency
+- Avoid unbounded or unindexed `meta_query`/`tax_query` on custom queries; add explicit indexes on custom tables for any column used in a `WHERE` or `JOIN`.
+- Avoid `posts_per_page => -1` on high-traffic queries; always paginate.
+- Batch bulk operations (e.g. bulk inserts/updates) instead of looping single queries.
