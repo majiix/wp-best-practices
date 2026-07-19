@@ -1,6 +1,6 @@
 ---
 name: wp-best-practices
-description: "Use when coding, refactoring, or auditing WordPress projects (plugins, themes, or apps). Enforces PHP 7.4+ compatibility, unique prefixing (4+ chars), translation rules, database caching, specific date/time handling, and high-traffic/concurrency performance rules (REST endpoints, session handling, request batching)."
+description: "Use when coding, refactoring, or auditing WordPress projects (plugins, themes, or apps). Enforces PHP 7.4+ compatibility, unique prefixing (4+ chars), translation rules, database caching, specific date/time handling, high-traffic/concurrency performance rules (REST endpoints, session handling, request batching), core security practices (escaping, SQL safety, nonces, uploads), and proportional (non-over-engineered) code design."
 ---
 
 # WordPress Best Practices and Code Standards
@@ -152,3 +152,44 @@ Apply these rules to every plugin you write, regardless of its purpose or featur
 - Avoid unbounded or unindexed `meta_query`/`tax_query` on custom queries; add explicit indexes on custom tables for any column used in a `WHERE` or `JOIN`.
 - Avoid `posts_per_page => -1` on high-traffic queries; always paginate.
 - Batch bulk operations (e.g. bulk inserts/updates) instead of looping single queries.
+
+### 37. REST API Security (General)
+- Every custom route must explicitly define `permission_callback` — never omit it, and never use `__return_true` unless the endpoint is intentionally public.
+- For public/guest-accessible state-changing endpoints (e.g. cart actions), verify a nonce (`wp_verify_nonce()` against `wp_rest`) in addition to `permission_callback`.
+- Beyond capability checks, verify ownership of the resource being acted on (e.g. a cart item belongs to the requesting session/user) inside the callback itself.
+- Define parameter validation/sanitization explicitly via the `args` schema in `register_rest_route()` (`validate_callback`, `sanitize_callback`), not just inline sanitization inside the handler.
+- Apply rate limiting (e.g. transient-based, per IP or session) on frequently-called or state-changing endpoints.
+- Never expose internal error details (queries, file paths, stack traces) in `WP_Error` responses returned to the client.
+
+
+## Core Security Practices
+
+### 38. Output Escaping
+- Escape every dynamic value at the point of output, matching the context: `esc_html()` for text, `esc_attr()` for attributes, `esc_url()` for URLs, `esc_js()` for inline JS, `wp_kses_post()`/`wp_kses()` for HTML that must allow specific tags.
+- Never trust sanitized-on-input data as safe for output — sanitize on input, escape on output, both are required.
+
+### 39. SQL Query Safety
+- Never concatenate raw variables into a SQL query. Always use `$wpdb->prepare()` for any query containing a variable, except for table/column name interpolation (which cannot be prepared and must instead be validated against an allowlist).
+
+### 40. Nonce & Capability Checks for Non-REST Actions
+- Any form submission or `admin-post.php`/`admin-ajax.php` action that changes state must include `wp_nonce_field()` on output and `check_admin_referer()` / `wp_verify_nonce()` on handling.
+- Always pair nonce verification with an explicit `current_user_can()` capability check — a valid nonce alone does not imply authorization.
+
+### 41. File Upload Validation
+- Validate uploaded file types using `wp_check_filetype()` against an explicit allowlist of extensions/MIME types — never trust the client-supplied filename or MIME type alone.
+
+### 42. Uninstall Cleanup
+- Provide an `uninstall.php` (or `register_uninstall_hook()`) that removes the plugin's own options, custom tables, transients, and scheduled cron events on uninstall — never on deactivation.
+
+### 43. Asset Cache Busting
+- Pass an explicit version string (plugin version or `filemtime()` of the asset) to `wp_enqueue_script()`/`wp_enqueue_style()` so browser caches invalidate correctly after updates.
+
+
+## Code Simplicity
+
+### 44. Avoid Over-Engineering
+- Solve the problem that exists now, not the one that might exist someday. Do not add abstraction layers, interfaces, factories, or configuration options for requirements that haven't been stated.
+- Prefer WordPress's built-in APIs and simple procedural/OOP structures over custom frameworks, generic plugin systems, or speculative extensibility (hooks/filters for hypothetical future use only) unless the plugin's actual, current scope requires it.
+- Match code complexity to the size of the task: a single-purpose plugin does not need a full service-container/dependency-injection setup; a REST controller + helper/service split (per Rule 31) is normally sufficient.
+- Do not introduce a new library, build step, or design pattern to solve a problem that a native WordPress function already solves.
+- When in doubt, choose the version of the code a future maintainer could understand fastest — not the version that anticipates the most hypothetical futures.
